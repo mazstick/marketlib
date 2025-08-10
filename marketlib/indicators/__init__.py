@@ -3,3 +3,7 @@ from .SMA import SMA
 from .PriceStdDev import PriceStdDev
 from .BollingerBands import BollingerBands
 from .ATR import ATR
+from .Custom import Custom
+from .EMA import EMA
+from .PATR import PATR
+from .MACD import MACD

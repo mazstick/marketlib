@@ -1,0 +1,4 @@
+from marketlib.data.onlinedata.CoinExPortfolio import CoinexPortfolio
+from marketlib.data.onlinedata.CoinEx import CoinEx
+portfo = CoinexPortfolio("19B5BFA0056444769D37DCD7A45BB646", "5909588B7DF5807D378E1C241B4E39F94247126004691590")
+coinex = CoinEx("19B5BFA0056444769D37DCD7A45BB646", "5909588B7DF5807D378E1C241B4E39F94247126004691590")

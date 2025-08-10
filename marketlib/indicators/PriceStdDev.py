@@ -28,6 +28,10 @@ class PriceStdDev(Indicator):
         self.period = period
         self.on_col = on_col
         self.result = None
+        self.preset_layer()
+        
+    def preset_layer(self):
+        self.layer.set_layer(label=self.name, panel=1, ylabel=self.name+" "+str(self.period))
 
     def calculate(self) -> pd.DataFrame:
         if self.on_col not in self.candles.columns:

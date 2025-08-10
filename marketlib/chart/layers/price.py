@@ -5,17 +5,21 @@ import mplfinance as mpf
 
 
 class PriceLayer:
-        
 
     def __init__(self):
         self.type = "candle"
-        self.style = "classic"
+        self.style = "yahoo"
         self.figsize = (10, 6)
+        self.figratio: tuple = None
+        self.figscale: float = None
+        self.ylim: tuple = None
+        self.xlim: tuple = None
         self.title = None
         self.ylabel = "Price"
+        self.axisoff = False
         self.ylabel_lower = None
-        self.tight_layout = True
-        self.scale_padding = 0.1
+        self.tight_layout = False
+        self.scale_padding = 1
         self.linecolor = "blue"
         self.volume = False
         self.mav = None
@@ -36,15 +40,20 @@ class PriceLayer:
     def set_layer(
         self,
         type: Literal["candle", "ohlc", "line", "renko", "pnf", "hollow"] = "candle",
-        style: str = "classic",
-        figsize: Tuple[int, int] = (10, 6),
+        style: str = "yahoo",
+        figsize: Tuple[int, int] = None,
         title: Optional[str] = None,
         ylabel: Optional[str] = "Price",
+        figratio: tuple = None,
+        figscale: float = None,
+        ylim: tuple = None,
+        xlim: tuple = None,
         ylabel_lower: Optional[str] = None,
-        tight_layout: bool = True,
-        scale_padding: float = 0.1,
+        tight_layout: bool = False,
+        scale_padding: float = 1,
         linecolor: str = "blue",
         volume: bool = False,
+        axisoff:bool = False,
         mav: Optional[Union[int, List[int]]] = None,
         datetime_format: Optional[str] = None,
         xrotation: int = 15,
@@ -68,6 +77,20 @@ class PriceLayer:
 
             figsize (tuple): A tuple (width, height) in inches for the figure size.
                             Default is (10, 6).
+                            
+            figscale (float): Overall scaling factor applied to the entire figure. Optional.
+
+            figratio (tuple): Ratio of figure width to height. Optional.
+            
+            axisoff (bool): Removes axes, ticks, labels, and gridlines for a clean minimalist plot.
+            
+            ylim (tuple): Y-axis value range.
+                        Manually sets the vertical axis limits, typically used to focus on a specific price range or value window.
+                        Format is (ymin, ymax), and values must match the expected data scale.
+
+            xlim (tuple): X-axis value range.
+                        Manually sets the horizontal axis limits, typically used to focus on a specific price range or value window.
+                        Format is (xmin, xmax), and values must match the expected data scale.
 
             title (str): Title to display at the top of the plot. Optional.
 
@@ -112,8 +135,8 @@ class PriceLayer:
         if type not in valid_types:
             raise ValueError(f"'type' must be one of {valid_types}, not '{type}'")
 
-        if not isinstance(figsize, tuple) or len(figsize) != 2:
-            raise ValueError("figsize must be a tuple of (width, height)")
+        # if not isinstance(figsize, tuple) or len(figsize) != 2:
+        #     raise ValueError("figsize must be a tuple of (width, height)")
 
         if scale_padding < 0 or scale_padding > 1:
             raise ValueError("scale_padding must be between 0 and 1.")
@@ -129,6 +152,11 @@ class PriceLayer:
         self.type = type
         self.style = style
         self.figsize = figsize
+        self.figratio = figratio
+        self.figscale = figscale
+        self.ylim = ylim
+        self.xlim = xlim
+        self.axisoff = axisoff
         self.title = title
         self.ylabel = ylabel
         self.ylabel_lower = ylabel_lower
@@ -153,6 +181,10 @@ class PriceLayer:
             "type": self.type,
             "style": self.style,
             "figsize": self.figsize,
+            "figratio": self.figratio,
+            "figscale": self.figscale,
+            "ylim": self.ylim,
+            "xlim": self.xlim,
             "title": self.title,
             "ylabel": self.ylabel,
             "ylabel_lower": self.ylabel_lower,
@@ -160,6 +192,7 @@ class PriceLayer:
             "scale_padding": self.scale_padding,
             "linecolor": self.linecolor,
             "volume": self.volume,
+            "axisoff": self.axisoff,
             "mav": self.mav,
             "datetime_format": self.datetime_format,
             "xrotation": self.xrotation,
@@ -188,7 +221,12 @@ class PriceLayer:
             "type",
             "style",
             "figsize",
+            "figratio",
+            'figscale',
+            'ylim',
+            'xlim',
             "title",
+            "axisoff",
             "ylabel",
             "ylabel_lower",
             "tight_layout",
@@ -223,8 +261,13 @@ class PriceLayer:
             "type": self.type,
             "style": self.style,
             "figsize": self.figsize,
+            "figratio": self.figratio,
+            "figscale": self.figscale,
+            "ylim": self.ylim,
+            "xlim":self.xlim,
             "title": self.title,
             "ylabel": self.ylabel,
+            "axisoff": self.axisoff,
             "ylabel_lower": self.ylabel_lower,
             "tight_layout": self.tight_layout,
             "scale_padding": self.scale_padding,
@@ -240,9 +283,7 @@ class PriceLayer:
             "warn_too_much_data": self.warn_too_much_data,
         }
 
-
         return {k: v for k, v in params.items() if v is not None}
-
 
     def get_available_types(self) -> List[str]:
         """

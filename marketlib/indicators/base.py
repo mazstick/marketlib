@@ -57,6 +57,13 @@ class Indicator(ABC):
             pd.Series or pd.DataFrame: Indicator results aligned with the candles.
         """
         pass
+    
+    @abstractmethod
+    def preset_layer(self):
+        """
+        Pre set indicator layer.
+        
+        """
 
     def __call__(self) -> Union[pd.Series, pd.DataFrame]:
         return self.calculate()

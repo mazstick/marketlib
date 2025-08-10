@@ -2,7 +2,6 @@ import pandas as pd
 from typing import List, Optional, Union, Literal
 from .Candle import Candle
 from marketlib.indicators import Indicator
-from marketlib.chart import PriceLayer
 import mplfinance as mpf
 
 
@@ -20,11 +19,14 @@ class Market:
 
         This constructor converts the DataFrame into a list of Candle objects.
         """
+        
+        
 
         if df.empty:
             raise ValueError("Data Frame is empty.")
 
-        self.layer = PriceLayer()
+        df = df.copy()
+
         self._dataframe_cache = None
         self.symbol = symbol
         self.timeframe = timeframe
@@ -34,6 +36,11 @@ class Market:
 
         if "datetime" in df.columns:
             df.set_index("datetime", inplace=True)
+        elif 'time' in df.columns:
+            df.set_index("time", inplace=True)
+        elif 'date' in df.columns:
+            df.set_index("date", inplace=True)
+
 
         df.index.name = df.index.name.lower()
 
@@ -113,64 +120,6 @@ class Market:
             "bearish_candles": bearish_count,
             "bullish_ratio": bullish_ratio,
         }
-
-    def get_layer(self) -> PriceLayer:
-        """
-        Returns the main price layer object.
-
-        Returns:
-            PriceLayer: The main chart layer object containing all mplfinance plot settings.
-        """
-        return self.layer
-
-    def get_layer_parameters(
-        self,
-        with_lines=True,
-        with_indicator_addplots: bool = True,
-        with_addplots = True,
-        start: int = 0,
-        end: Optional[int] = None,
-    ) -> dict:
-        """
-        Generate a dictionary of parameters ready to be passed to `mpf.plot()`.
-
-        Args:
-            with_indicator_addplots (bool): Whether to include addplot layers for indicators.
-            with_lines (bool): Whether to include lines.
-            with_addplots (bool): Whether to include handly added addplots.
-            start (int): Start index for slicing the cached DataFrame.
-            end (int): End index (exclusive). If None, uses end of DataFrame.
-
-        Returns:
-            dict: Dictionary with all relevant parameters including `data` and `addplot` if selected.
-
-        Raises:
-            ValueError: If slicing indices are out of range.
-        """
-        if end is None:
-            end = len(self._dataframe_cache)
-
-        param = self.layer.get_parameters(with_lines=with_lines)
-
-        if with_indicator_addplots:
-            param["addplot"] = [
-                mpf.make_addplot(
-                    **p.get_layer_parameters(with_data=True, start=start, end=end)
-                )
-                for p in self.indicators
-            ]
-
-        if with_addplots and len(self.addplot) != 0:
-            if with_indicator_addplots:
-                param["addplot"].extend(self.addplot)
-            else: 
-                param["addplot"] = self.addplot
-            
-            
-        
-        param["data"] = self._dataframe_cache[start:end]
-
-        return param
 
 
     def to_dataframe(self) -> pd.DataFrame:

@@ -16,6 +16,9 @@ class ATR(Indicator):
     - method: 'sma' | 'wilder' (default='wilder')
     - fast_wilder: bool, use fast ewm approximation for Wilder method (default=False)
     """
+    
+    def preset_layer(self):
+        self.layer.set_layer(width=1.5, panel=1, label=self.name, ylabel=self.name+" "+str(self.period))
 
     def __init__(
         self,
@@ -30,6 +33,7 @@ class ATR(Indicator):
         self.method = method.lower()
         self.fast_wilder = fast_wilder
         self.result = None
+        self.preset_layer()
 
     def calculate(self) -> pd.DataFrame:
         high = self.candles["high"]
@@ -48,7 +52,6 @@ class ATR(Indicator):
 
         elif self.method == "wilder":
             if self.fast_wilder:
-                # Use exponentially weighted moving average (similar to Wilder)
                 alpha = 1 / self.period
                 atr = tr.ewm(alpha=alpha, adjust=False).mean()
             else:

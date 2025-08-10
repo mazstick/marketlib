@@ -41,7 +41,8 @@ class SMA(Indicator):
         else:
             raise ValueError("periods must be a positive int or a list of positive ints.")
         
-        self.preset()
+        self.preset_layer()
+        
 
     def calculate(self) -> pd.DataFrame:
         """
@@ -62,10 +63,8 @@ class SMA(Indicator):
         return self.result
 
 
-
-    def preset(self):
-        self.layer.panel = 0
-        
+    def preset_layer(self):
+        self.layer.set_layer(label=self.name, ylabel=self.name+" "+str(self.periods), panel=0)
         
     def merg_to_candles(self) -> pd.DataFrame:
         """

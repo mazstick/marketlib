@@ -1,8 +1,11 @@
-from .layers.line import LineLayer
-from .layers.fill_between import FillBetweenLayer
-from .layers.signal import SignalLayer
-from typing import List, Literal, Union, Optional
-from marketlib import data
+from marketlib.chart import LineLayer
+from marketlib.chart import FillBetweenLayer
+from marketlib.chart import SignalLayer
+from marketlib.chart import PriceLayer
+from marketlib.strategy import Strategy
+from typing import List, Literal, Union, Optional, Dict
+import os
+from marketlib.data import Market
 from marketlib import indicators
 import pandas as pd
 import mplfinance as mpf
@@ -15,12 +18,14 @@ from dateutil.parser import parse
 class Chart:
 
     def __init__(self):
-        self.market: data.Market = None
+        self.chart: pd.DataFrame = None
+        self.layer: PriceLayer = PriceLayer() 
         self.indicator_list: List[indicators.Indicator] = []
         self.line_list: List[LineLayer] = []
         self.addplot_list: List = []
         self.fillbetween_list: List[FillBetweenLayer] = []
         self.signal_list: List[SignalLayer] = []
+        self.strategy_list: List[Strategy] = []
 
     def delete_lines(self):
         self.line_list = []
@@ -37,12 +42,16 @@ class Chart:
     def delete_signals(self):
         self.signal_list = []
 
+    def delete_strategys(self):
+        self.strategy_list = []
+
     def reset(self):
         self.delete_addplots()
         self.delete_indicators()
         self.delete_fillbetweens()
         self.delete_lines()
         self.delete_signals()
+        self.delete_strategys()
 
     def add_signal(
         self,
@@ -144,17 +153,29 @@ class Chart:
         )
         self.fillbetween_list.append(f)
 
-    def add_market(self, market: data.Market):
-        if isinstance(market, data.Market):
-            self.market = market
+    def add_chart(self, chart: pd.DataFrame, symbol:str, timeframe:str):
+        chart = chart.copy()
+        if isinstance(chart, pd.DataFrame):
+            if not set({'open', 'high', 'low', 'close', 'volume'}).issubset(set(chart.columns)) or type(chart.index) != datetime:
+                self.timeframe = timeframe
+                self.symbol = symbol
+                self.chart = chart
+            else:
+                self.chart = chart
         else:
-            raise ValueError(f"market must be instance of Market not {market}")
+            raise ValueError(f"chart must be instance of pd.Dataframe not {type(chart)}")
 
     def add_indicator(self, indicator: indicators.Indicator):
         if isinstance(indicator, indicators.Indicator):
             self.indicator_list.append(indicator)
         else:
-            raise ValueError(f"market must be instance of Market not {indicator}")
+            raise ValueError(f"indicator must be instance of Indicator not {type(indicator)}")
+
+    def add_strategy(self, strategy: Strategy):
+        if self.chart is None:
+            raise ValueError("chart is None please add chart:(pd.Dataframe) first.")
+
+        self.strategy_list.append(strategy)
 
     def add_line(
         self,
@@ -277,6 +298,74 @@ class Chart:
 
         self.addplot_list.append(mpf.make_addplot(**r))
 
+    def save_fig(
+        self,
+        path: str,
+        start: int = 0,
+        end: Optional[int] = None,
+        with_indicator: bool = True,
+        with_lines: bool = True,
+        with_addplots: bool = True,
+        with_fillbetweens: bool = True,
+        with_signals: bool = True,
+        with_strategy: bool = True,
+        savefig_kwargs: Optional[Dict[str, Union[str, int, float, bool]]] = None
+    ):
+        """
+        Save the chart with full control over matplotlib's savefig() parameters.
+
+        Parameters:
+        ----------
+        path : str
+            Full output path for the saved chart (e.g., 'charts/myplot.png').
+
+        savefig_kwargs : dict, optional
+            Dictionary of parameters passed to matplotlib.pyplot.savefig():
+            - dpi : Resolution of the image (e.g., 300)
+            - format : File format ('png', 'pdf', 'svg', etc.)
+            - bbox_inches : Bounding box setting ('tight' to remove margins)
+            - pad_inches : Padding around the figure
+            - transparent : Set True for transparent background
+            - metadata : Dictionary with metadata to embed
+            - facecolor, edgecolor : Colors for background and border
+            ... and any other valid savefig() parameter
+
+        Example:
+        --------
+        savefig_kwargs = {
+            'dpi': 400,
+            'format': 'png',
+            'transparent': True,
+            'bbox_inches': 'tight',
+            'pad_inches': 0.1
+        }
+        """
+
+        save_config = {'fname': path}
+        if isinstance(savefig_kwargs, dict):
+            save_config.update(savefig_kwargs)
+
+        try:
+            self.plot(
+                start=start,
+                end=end,
+                with_indicator=with_indicator,
+                with_lines=with_lines,
+                with_addplots=with_addplots,
+                with_fillbetweens=with_fillbetweens,
+                with_signals=with_signals,
+                with_strategy=with_strategy,
+                savefig=save_config
+            )
+        except Exception as e:
+            raise RuntimeError(f"Error while saving chart: {e}")
+
+        if not os.path.exists(path):
+            raise FileNotFoundError(f"Chart saving failed — file not found at: '{path}'")
+
+        print(f"Chart successfully saved to:\n{path}")
+
+
     def plot(
         self,
         start: int = 0,
@@ -286,6 +375,8 @@ class Chart:
         with_addplots: bool = True,
         with_fillbetweens: bool = True,
         with_signals: bool = True,
+        with_strategy: bool = True,
+        return_fig: bool = False,
         **kwargs,
     ):
         """
@@ -296,7 +387,7 @@ class Chart:
         Args:
             with_indicator_addplots (bool): Whether to include addplot layers for indicators.
             with_lines (bool): Whether to include line layers.
-            with_lines (bool): Whether to include addplot layers.
+            with_addplots (bool): Whether to include addplot layers.
             start (int): Start index of the data to plot.
             end (int): End index (exclusive) of the data to plot.
 
@@ -304,7 +395,7 @@ class Chart:
             None
         """
 
-        if self.market is None:
+        if self.chart is None:
             for indics in self.indicator_list:
                 plt.figure(figsize=indics.layer.figsize)
                 plt.plot(
@@ -332,12 +423,38 @@ class Chart:
             return
 
         if end is None:
-            if self.market is not None:
-                end = len(self.market.to_dataframe())
+            if self.chart is not None:
+                end = len(self.chart)
             elif len(self.indicator_list):
                 end = len(self.indicator_list[0].calculate())
 
         plots = []
+
+        if with_strategy:
+            for strategy in self.strategy_list:
+                self.indicator_list.extend(strategy.indicators)
+                signals = strategy.generate_signals()
+                temp_signal_layer = SignalLayer()
+                temp_signal_layer.set_layer(
+                    data=signals == "buy", position="buy", markersize=20
+                )
+                plots.append(
+                    mpf.make_addplot(
+                        data=self._clean_signal_data(temp_signal_layer)[start:end],
+                        **temp_signal_layer.get_parameters(),
+                    )
+                )
+                temp_signal_layer = SignalLayer()
+                temp_signal_layer.set_layer(
+                    data=signals == "sell", position="sell", markersize=20
+                )
+                plots.append(
+                    mpf.make_addplot(
+                        data=self._clean_signal_data(temp_signal_layer)[start:end],
+                        **temp_signal_layer.get_parameters(),
+                    )
+                )
+
         if with_indicator and len(self.indicator_list) != 0:
             for indics in self.indicator_list:
                 ap = mpf.make_addplot(
@@ -348,7 +465,12 @@ class Chart:
 
         if with_signals and len(self.signal_list) != 0:
             for signal in self.signal_list:
-                plots.append(mpf.make_addplot(data=self._clean_signal_data(signal)[start:end] , **signal.get_parameters()))
+                plots.append(
+                    mpf.make_addplot(
+                        data=self._clean_signal_data(signal)[start:end],
+                        **signal.get_parameters(),
+                    )
+                )
 
         if with_addplots and len(self.addplot_list) != 0:
             plots.extend(self.addplot_list)
@@ -362,25 +484,38 @@ class Chart:
             for fl in self.fillbetween_list:
                 fl_list.append(fl.get_parameters())
             params["fill_between"] = fl_list
+            
+        
+            
+        if self.layer.title == None:
+            self.layer.title = f"{self.symbol} {self.timeframe}"
 
         fig, axes = mpf.plot(
-            data=self.market.to_dataframe()[start:end],
-            **self.market.layer.get_parameters(),
+            data=self.chart[start:end],
+            **self.layer.get_parameters(),
             **params,
             returnfig=True,
             **kwargs,
         )
 
         if with_lines:
-            self.make_line_collection(self.line_list, axes)
+            self.make_line_collection(self.line_list, axes, start=start)
             plt.show()
+            
+        
+        if return_fig:    
+            return fig, axes
+        else:
+            return
 
     def _clean_signal_data(self, signal: SignalLayer) -> pd.Series:
 
         data = signal.data
         use = signal.signal_use
         if use in ["close", "high", "low", "open"]:
-            data = self.market.to_dataframe()[use].mask(data) * (1 + signal.distance_mark)
+            data = self.chart[use].mask(data) * (
+                1 + signal.distance_mark
+            )
             return data
 
         same_indicator_panel = 0
@@ -389,7 +524,9 @@ class Chart:
                 if signal.panel == i.layer.panel:
                     same_indicator_panel += 1
                     if use < len(i.calculate().columns):
-                        data = i.calculate().mask(data).iloc[: ,use] * (1 + signal.distance_mark)
+                        data = i.calculate().mask(data).iloc[:, use] * (
+                            1 + signal.distance_mark
+                        )
                         return data
                     else:
                         use = use - len(i.calculate().columns)
@@ -414,22 +551,22 @@ class Chart:
                 f"the signal_use = {signal.signal_use} is not in indicators columns name."
             )
 
-    def _clean_line_data(self, line: LineLayer, ax) -> list[list[tuple]]:
+    def _clean_line_data(self, line: LineLayer, ax, start:int) -> list[list[tuple]]:
         if line.type == "hline":
             if isinstance(line.data, (int, float)):
-                return [[(0, line.data), (len(self.market.to_dataframe()), line.data)]]
+                return [[(0, line.data), (len(self.chart), line.data)]]
             elif isinstance(line.data, list):
                 if len(line.data) == 1:
                     return [
                         [
                             (0, line.data[0]),
-                            (len(self.market.to_dataframe()), line.data[0]),
+                            (len(self.chart), line.data[0]),
                         ]
                     ]
                 else:
                     d = []
                     for i in line.data:
-                        d.append([(0, i), (len(self.market.to_dataframe()), i)])
+                        d.append([(0, i), (len(self.chart), i)])
                     return d
         elif line.type == "vline":
             if isinstance(line.data, list):
@@ -476,12 +613,18 @@ class Chart:
                         for h in l:
                             x = self._correct_x_linedata(h)
                             y = self._find_tline_y_point(x, line)
+                            x = x - start
+                            if x < 0:
+                                continue
                             temp.append((x, y))
 
                         new_data.append(temp)
                     else:
                         x = self._correct_x_linedata(l)
                         y = self._find_tline_y_point(x, line)
+                        x = x - start
+                        if x < 0:
+                            continue
                         alone_point.append((x, y))
 
                 if len(alone_point) != 0:
@@ -491,7 +634,7 @@ class Chart:
 
     def _find_tline_y_point(self, x: int, line: LineLayer):
         if line.tline_use in line.get_available_tline_use():
-            y = self.market.to_dataframe().iloc[x].loc[line.tline_use]
+            y = self.chart.iloc[x].loc[line.tline_use]
             return y
 
         same_indicator_panel = 0
@@ -530,15 +673,15 @@ class Chart:
             return data
         elif isinstance(data, str):
             t = parse(data)
-            return self.market.to_dataframe().index.get_loc(t)
+            return self.chart.index.get_loc(t)
         elif isinstance(data, datetime):
-            return self.market.to_dataframe().index.get_loc(data)
+            return self.chart.index.get_loc(data)
 
     def make_line_collection(
-        self, line_list: List[LineLayer], ax
+        self, line_list: List[LineLayer], ax, start:int = 0,
     ) -> List[LineCollection]:
         for line in line_list:
-            d = self._clean_line_data(line, ax)
+            d = self._clean_line_data(line, ax, start)
             l = LineCollection(
                 d,
                 linestyle=line.linestyle,
@@ -547,9 +690,7 @@ class Chart:
                 color=line.color,
             )
             ax[line.panel * 2].add_collection(l)
-            
-            
-          
+
     def color_palette_help(self) -> List[str]:
         """
         Return a list of named CSS4 colors supported by matplotlib.
@@ -558,10 +699,9 @@ class Chart:
             List[str]: List of color names.
         """
         import matplotlib.colors as mcolors
-        return list(mcolors.CSS4_COLORS.keys())      
-            
-            
-            
+
+        return list(mcolors.CSS4_COLORS.keys())
+
     def marker_styles_help(self) -> dict:
         """
         Return a dictionary of common matplotlib marker styles.
@@ -570,31 +710,30 @@ class Chart:
             dict: Marker code to description.
         """
         return {
-            '.': 'point',
-            ',': 'pixel',
-            'o': 'circle',
-            'v': 'triangle down',
-            '^': 'triangle up',
-            '<': 'triangle left',
-            '>': 'triangle right',
-            '1': 'tri down (tick)',
-            '2': 'tri up (tick)',
-            '3': 'tri left (tick)',
-            '4': 'tri right (tick)',
-            's': 'square',
-            'p': 'pentagon',
-            '*': 'star',
-            'h': 'hexagon1',
-            'H': 'hexagon2',
-            '+': 'plus',
-            'x': 'x',
-            'D': 'diamond',
-            'd': 'thin diamond',
-            '|': 'vertical line',
-            '_': 'horizontal line'
+            ".": "point",
+            ",": "pixel",
+            "o": "circle",
+            "v": "triangle down",
+            "^": "triangle up",
+            "<": "triangle left",
+            ">": "triangle right",
+            "1": "tri down (tick)",
+            "2": "tri up (tick)",
+            "3": "tri left (tick)",
+            "4": "tri right (tick)",
+            "s": "square",
+            "p": "pentagon",
+            "*": "star",
+            "h": "hexagon1",
+            "H": "hexagon2",
+            "+": "plus",
+            "x": "x",
+            "D": "diamond",
+            "d": "thin diamond",
+            "|": "vertical line",
+            "_": "horizontal line",
         }
-        
-        
+
     def market_chart_types_help(self) -> List[str]:
         """
         Return the list of valid chart types supported by mplfinance.
