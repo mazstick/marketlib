@@ -618,7 +618,8 @@ class Chart:
                                 continue
                             temp.append((x, y))
 
-                        new_data.append(temp)
+                        if len(temp) != 0:
+                            new_data.append(temp)
                     else:
                         x = self._correct_x_linedata(l)
                         y = self._find_tline_y_point(x, line)

@@ -27,14 +27,14 @@ class MACD(Indicator):
         slow_period: int = 26,
         signal_period: int = 9,
         on_col: Union[Literal["open", "high", "low", "close", "volume"], str] = "close",
-        hist_only: bool = False,
+        only_macd_line: bool = False,
     ):
         super().__init__(candles)
 
         self.name = "MACD"
         self.result = None
         self.on_col = on_col
-        self.hist_only = hist_only
+        self.only_macd_line = only_macd_line
 
         if self.on_col not in self.candles.columns:
             raise ValueError(
@@ -59,11 +59,11 @@ class MACD(Indicator):
                 self.name + " line",
                 self.name + " signal",
                 self.name + " histogram",
-            ] if not self.hist_only else self.name,
-            type="bar" if self.hist_only else "line",
+            ] if not self.only_macd_line else self.name,
+            type="bar" if self.only_macd_line else "line",
             ylabel=f"{self.name} ({self.fast_period},{self.slow_period},{self.signal_period})",
             panel=1,
-            width=.5 if self.hist_only else 1
+            width=.5 if self.only_macd_line else 1
         )
 
     def calculate(self) -> pd.DataFrame:
@@ -88,8 +88,8 @@ class MACD(Indicator):
             index=self.candles.index,
         )
 
-        if self.hist_only:
-            return self.result["histogram"].to_frame()
+        if self.only_macd_line:
+            return self.result["macd"].to_frame()
         else:
             return self.result
 
