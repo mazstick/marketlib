@@ -46,12 +46,18 @@ class Chart:
         self.strategy_list = []
 
     def reset(self):
-        self.delete_addplots()
-        self.delete_indicators()
-        self.delete_fillbetweens()
-        self.delete_lines()
-        self.delete_signals()
-        self.delete_strategys()
+        self.line_list = []
+        self.strategy_list = []
+        self.signal_list = []
+        self.addplot_list = []
+        self.fillbetween_list = []
+        self.indicator_list = []
+
+
+
+
+
+
 
     def add_signal(
         self,
@@ -432,28 +438,21 @@ class Chart:
 
         if with_strategy:
             for strategy in self.strategy_list:
-                self.indicator_list.extend(strategy.indicators)
                 signals = strategy.generate_signals()
                 temp_signal_layer = SignalLayer()
                 temp_signal_layer.set_layer(
                     data=signals == "buy", position="buy", markersize=20
                 )
-                plots.append(
-                    mpf.make_addplot(
-                        data=self._clean_signal_data(temp_signal_layer)[start:end],
-                        **temp_signal_layer.get_parameters(),
-                    )
-                )
+                self.signal_list.append(temp_signal_layer)
                 temp_signal_layer = SignalLayer()
                 temp_signal_layer.set_layer(
                     data=signals == "sell", position="sell", markersize=20
                 )
-                plots.append(
-                    mpf.make_addplot(
-                        data=self._clean_signal_data(temp_signal_layer)[start:end],
-                        **temp_signal_layer.get_parameters(),
-                    )
-                )
+                self.signal_list.append(temp_signal_layer)
+
+                self.indicator_list.extend(strategy.indicators)
+                self.line_list.extend(strategy.lines)
+
 
         if with_indicator and len(self.indicator_list) != 0:
             for indics in self.indicator_list:
@@ -465,6 +464,8 @@ class Chart:
 
         if with_signals and len(self.signal_list) != 0:
             for signal in self.signal_list:
+                if signal.data[start:end].all() == True:
+                    continue
                 plots.append(
                     mpf.make_addplot(
                         data=self._clean_signal_data(signal)[start:end],

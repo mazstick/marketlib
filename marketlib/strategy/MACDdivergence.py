@@ -15,6 +15,9 @@ class MACDDivergence(Strategy):
         signal_period: int = 9,
         on_col: Literal["close", "low", "high", "open"] = "close",
         interspace: int = 3,
+        treshhold:int = 60,
+        price_differenc = 0,
+        macd_differenc = 0,
         type: Literal["rd", "hd"] = None,
         side: Literal["sell", "buy"] = None,
     ):
@@ -31,6 +34,9 @@ class MACDDivergence(Strategy):
         self.side = "" if side is None else side
         self.type = "" if type is None else type
         self.indicators.append(self.macd)
+        self.treshhold = treshhold
+        self.macd_diff = macd_differenc
+        self.price_diff = price_differenc
 
     def _find_exterma(self, curve: pd.Series, distance: int = 7, prominence: int = 60):
 
@@ -89,31 +95,31 @@ class MACDDivergence(Strategy):
                         price_rd.append([int(p1), int(p2)])
                         macd_rd.append([int(m1), int(m2)])
                         if type != "hd":
-                            self.signals.iloc[p2 + self.interspace] = side
+                            self.signals.iloc[p2 + self.interspace] = "sell"
                     else:
                         price_hd.append([int(p1), int(p2)])
                         macd_hd.append([int(m1), int(m2)])
                         if type != "rd":
-                            self.signals.iloc[p2 + self.interspace] = side
+                            self.signals.iloc[p2 + self.interspace] = "buy"
 
                 if price2 - price1 < price_diff and macd2 - macd1 > macd_diff:
                     if side == "buy":
                         price_rd.append([int(p1), int(p2)])
                         macd_rd.append([int(m1), int(m2)])
                         if type != "hd":
-                            self.signals.iloc[p2 + self.interspace] = side
+                            self.signals.iloc[p2 + self.interspace] = "buy"
                     else:
                         price_hd.append([int(p1), int(p2)])
                         macd_hd.append([int(m1), int(m2)])
                         if type != "rd":
-                            self.signals.iloc[p2 + self.interspace] = side
+                            self.signals.iloc[p2 + self.interspace] = "sell"
 
         if len(price_rd) != 0:
             l_price_rd = LineLayer()
             l_price_rd.set_parameters(
                 price_rd,
                 type="tline",
-                tline_use="low",
+                tline_use="high" if side == "sell" else"low",
                 color="b" if side == "buy" else "r",
             )
             l_macd_rd = LineLayer()
@@ -131,7 +137,7 @@ class MACDDivergence(Strategy):
             l_price_hd.set_parameters(
                 price_rd,
                 type="tline",
-                tline_use="low",
+                tline_use="high" if side == "sell" else"low",
                 color="b" if side == "buy" else "r",
                 linestyle="--",
             )
@@ -154,50 +160,55 @@ class MACDDivergence(Strategy):
             self.data["low"].mul(-1), distance=7, prominence=60
         )
 
-        macd_high_peaks = self._find_exterma(
-            self.macd().loc[self.macd()["macd"] >= 0], distance=15, prominence=0
-        )
-        macd_low_peaks = self._find_exterma(
-            self.macd().loc[self.macd()["macd"] < 0], distance=15, prominence=0
-        )
+
+        macd_peaks = self._find_exterma(self.macd().abs(), distance=15, prominence=0)
+        macd_df = self.macd()
+        macd_low_peaks = []
+        macd_high_peaks = []
+        for i in range(0,len(macd_peaks)):
+            if macd_df.iloc[macd_peaks[i]]["macd"] < 0:
+                macd_low_peaks.append(macd_peaks[i])
+            if macd_df.iloc[macd_peaks[i]]["macd"] > 0:
+                macd_high_peaks.append(macd_peaks[i])
+
 
         nearest_high = self._map_extrema(high_peaks, macd_high_peaks, max_distance=6)
         nearest_low = self._map_extrema(low_peaks, macd_low_peaks, max_distance=6)
 
         if self.side == "":
             self._divergence_detector(
-                nearest_high,
+                nearest_low,
                 side="buy",
-                tresh=100,
-                price_diff=0,
-                macd_diff=0,
+                tresh=self.treshhold,
+                price_diff=self.price_diff,
+                macd_diff=self.macd_diff,
                 type=self.type,
             )
             self._divergence_detector(
-                nearest_low,
+                nearest_high,
                 side="sell",
-                tresh=100,
-                price_diff=0,
-                macd_diff=0,
+                tresh=self.treshhold,
+                price_diff=self.price_diff,
+                macd_diff=self.macd_diff,
                 type=self.type,
             )
         else:
             if self.side == "buy":
                 self._divergence_detector(
-                    nearest_high,
+                    nearest_low,
                     side=self.side,
-                    tresh=100,
-                    price_diff=0,
-                    macd_diff=0,
+                    tresh=self.treshhold,
+                    price_diff=self.price_diff,
+                    macd_diff=self.macd_diff,
                     type=self.type,
                 )
             elif self.side == "sell":
                 self._divergence_detector(
-                    nearest_low,
+                    nearest_high,
                     side=self.side,
-                    tresh=100,
-                    price_diff=0,
-                    macd_diff=0,
+                    tresh=self.treshhold,
+                    price_diff=self.price_diff,
+                    macd_diff=self.macd_diff,
                     type=self.type,
                 )
 

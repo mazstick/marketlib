@@ -16,7 +16,7 @@ class Strategy(ABC):
             raise ValueError("data must be a pd.Dataframe with {'close', 'high', 'low', 'open'} columns.")
         
         self.data = data.copy()
-        self.signals = pd.Series(index=data.index) 
+        self.signals = pd.Series(index=data.index, dtype="object") 
         self.indicators:list[Indicator] = []
         self.lines:list[LineLayer] = []
 

@@ -7,11 +7,5 @@ setup(
     author="Mohammad Ali Zahmatkesh",
     author_email="maz.stick1383@gmail.com",
     packages=find_packages(),
-    install_requires=[
-        "pandas",
-        "matplotlib",
-        "numpy",
-        "mplfinance"
-    ],
-    python_requires=">=3.8"
+    python_requires=">=3.8",
 )

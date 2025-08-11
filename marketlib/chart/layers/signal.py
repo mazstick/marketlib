@@ -114,22 +114,22 @@ class SignalLayer:
             else:
                 data = pd.Series(data.iloc[:, 0])
                 if isinstance(data.iloc[0], (bool, np.bool)):
-                    data = - data
+                    data = ~ data
                 elif isinstance(data.iloc[0], (int, float)):
                     data = data.astype(object)
                     data[data == 0] = False
                     data[data != 0] = True
-                    data = -data
+                    data = ~ data
             if data is None:
                 raise ValueError(f"data = {data} or it's not in correct form.")
         elif isinstance(data, pd.Series):
                 if isinstance(data.iloc[0], (bool, np.bool)):
-                    data = - data
+                    data = ~ data
                 elif isinstance(data.iloc[0], (int, float)):
                     data = data.astype(object)
                     data[data == 0] = False
                     data[data != 0] = True
-                    data = -data
+                    data = ~ data
                 if data is None:
                     raise ValueError(f"data = {data} or it's not in correct form.")
         
