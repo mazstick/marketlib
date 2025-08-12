@@ -40,6 +40,11 @@ class Market:
             df.set_index("time", inplace=True)
         elif 'date' in df.columns:
             df.set_index("date", inplace=True)
+            
+        df["close"] = df["close"].astype(float)
+        df["low"] = df["low"].astype(float)
+        df["high"] = df["high"].astype(float)
+        df["open"] = df["open"].astype(float)
 
 
         df.index.name = df.index.name.lower()
