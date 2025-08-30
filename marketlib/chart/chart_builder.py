@@ -5,7 +5,6 @@ from marketlib.chart import PriceLayer
 from marketlib.strategy import Strategy
 from typing import List, Literal, Union, Optional, Dict
 import os
-from marketlib.data import Market
 from marketlib import indicators
 import pandas as pd
 import mplfinance as mpf

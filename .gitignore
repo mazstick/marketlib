@@ -179,3 +179,7 @@ cython_debug/
 #  refer to https://docs.cursor.com/context/ignore-files
 .cursorignore
 .cursorindexingignore
+merged.csv
+tests/202507_JUL.csv
+2025-07f01t02.csv
+202507_JUL.7z
