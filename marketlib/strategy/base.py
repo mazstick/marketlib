@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 import pandas as pd
-from marketlib.indicators.base import Indicator
+from marketlib.indicators import Indicator
 from marketlib.chart import LineLayer
 
 

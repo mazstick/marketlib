@@ -189,7 +189,7 @@ class Market:
         if self._dataframe_cache is None:
             df = self.to_dataframe()
         df = self._dataframe_cache
-        return pd.DataFrame(df["close"])
+        return df["close"]
 
     def get_opens(self):
         """
@@ -201,7 +201,7 @@ class Market:
         if self._dataframe_cache is None:
             df = self.to_dataframe()
         df = self._dataframe_cache
-        return pd.DataFrame(df["open"])
+        return df["open"]
 
     def get_highs(self):
         """
@@ -213,7 +213,7 @@ class Market:
         if self._dataframe_cache is None:
             df = self.to_dataframe()
         df = self._dataframe_cache
-        return pd.DataFrame(df["high"])
+        return df["high"]
 
     def get_lows(self):
         """
@@ -225,7 +225,7 @@ class Market:
         if self._dataframe_cache is None:
             df = self.to_dataframe()
         df = self._dataframe_cache
-        return pd.DataFrame(df["low"])
+        return df["low"]
 
     def get_volumes(self):
         """
@@ -237,7 +237,7 @@ class Market:
         if self._dataframe_cache is None:
             df = self.to_dataframe()
         df = self._dataframe_cache
-        return pd.DataFrame(df["volume"])
+        return df["volume"]
 
     def get_candle_counts(self) -> dict:
         """

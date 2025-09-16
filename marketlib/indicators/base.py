@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Union, Optional
 import pandas as pd
 from marketlib.chart import IndicatorLayer
+
 import mplfinance as mpf
 import matplotlib.pyplot as plt
 
@@ -15,8 +16,12 @@ class Indicator(ABC):
     """
 
     def __init__(self, candles: Union[pd.DataFrame]):
+        
+        from marketlib.plotly import layer
 
         self.layer = IndicatorLayer()
+        self.plotly_layer = layer.IndicatorPlotlyLayer()
+        
         if isinstance(candles, pd.DataFrame):
             df = candles
         else:
