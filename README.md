@@ -35,7 +35,9 @@ chart.plot()
 
 marketlib/
 ├── data/         # Market data & exchange APIs
+
 ├── indicators/   # Technical indicators
+
 ├── strategy/     # Trading strategies
 ├── backtest/     # Backtesting engine
 └── chart/        # Visualization with Plotly
