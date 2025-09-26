@@ -43,4 +43,4 @@ marketlib/
 
 ├── backtest/     # Backtesting engine
 
-└── chart/        # Visualization with Plotly
+└── chart/        # Visualization with Plotly & mplfinance
