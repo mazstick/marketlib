@@ -12,7 +12,7 @@ It provides tools to fetch market data, implement indicators, design trading str
 - Built-in technical indicators (SMA, EMA, MACD, ATR, Bollinger Bands) + custom indicators  
 - Strategy framework (e.g., Moving Average Cross, MACD Divergence)  
 - Backtesting engine with portfolio, orders, and reporting  
-- Interactive charts with Plotly (price, indicators, signals)
+- Interactive charts with Plotly & mplfinance(price, indicators, signals)
 
 ---
 
